@@ -28,17 +28,37 @@ dependencies {
     testImplementation 'junit:junit:4.12'
 }
 
-abstract class SlowServer implements BuildService<BuildServiceParameters>, AutoCloseable {
+
+/*
+ * Build Service setup
+ */
+
+def slowServer = project.gradle.sharedServices.registerIfAbsent("slow", SlowServer) {
+    parameters.port = 8888
+}
+
+test {
+    doFirst {
+        // Before the tests run, access the service to ensure it has started.
+        slowServer.get()
+    }
+}
+
+abstract class SlowServer implements BuildService<Params>, AutoCloseable {
+    interface Params extends BuildServiceParameters {
+        Property<Integer> getPort()
+    }
 
     SlowServer() {
-
         // Start the server ...
-        System.out.println("Server is running SLOWLY...")
+        System.out.println("Server is starting on port: " + parameters.port.get())
+        Thread.sleep(3000)
+        System.out.println("Server is running.")
     }
 
     @Override
     void close() {
         // Stop the server ...
-        System.out.println("Server is stopped...")
+        System.out.println("Server is stopped.")
     }
 }
